@@ -47,7 +47,7 @@ let describeTestsForTask = function(taskName, task) {
       }
     });
 
-    if(taskName !== 'browsersync.js') {
+    if (taskName !== 'browsersync.js') {
       it('should have all required methods', () => {
         let taskKeys = Object.keys(task);
         let missingMethods = REQUIRED_METHODS.filter(key => {
@@ -94,7 +94,7 @@ describe('Run checks and tests against each WSK task', () => {
   // Clean up after final test
   after(done => del(TEST_OUTPUT_PATH + '/**').then(() => done(), done));
 
-  taskHelper.getTasks().map(taskObject => {
+  taskHelper.getTasks().forEach(taskObject => {
     describeTestsForTask(taskObject.filename, require(taskObject.path));
   });
 });
