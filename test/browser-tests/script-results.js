@@ -18,19 +18,33 @@
  */
 
 /* eslint-env mocha, browser */
+/* global chai */
+/* eslint no-eval: 0 */
 
-describe('Test final script output', function() {
-  it('should be able to eval the final dev output from babel', function() {
-    return fetch('/test/output/babel/phantomjs-test.js')
+function performTest(testFile) {
+  it('should be able to eval the final output from babel for ' + testFile, function() {
+    return fetch(testFile)
     .then(function(response) {
       response.status.should.equal(200);
       return response.text();
     })
     .then(function(response) {
-      console.log(response);
       chai.expect(function() {
         eval(response);
       }).to.not.throw();
     });
   });
+}
+
+describe('Test final script output', function() {
+  const testFiles = [
+    '/test/output/babel/commonjs-module-cubed.js',
+    '/test/output/babel/commonjs-module-square.js',
+    '/test/output/babel/commonjs-use-test.js',
+    '/test/output/babel/es2015-imports.js',
+    '/test/output/babel/es2015-module-multiple-exports.js',
+    '/test/output/babel/mixed-use.js'
+  ];
+
+  testFiles.forEach(testFile => performTest(testFile));
 });

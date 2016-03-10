@@ -27,6 +27,7 @@ const webdriver = require('selenium-webdriver');
 const chromeOptions = require('selenium-webdriver/chrome');
 const firefoxOptions = require('selenium-webdriver/firefox');
 const which = require('which');
+const testServerHelper = require('./server/server');
 
 const CHROME_PATH = which.sync('google-chrome');
 const CHROME_BETA_PATH = which.sync('google-chrome-beta');
@@ -43,31 +44,31 @@ GLOBAL.config = {
   dest: TEST_OUTPUT_PATH
 };
 
-describe('Test WSK', function() {
+describe('Test WSK in browser', function() {
   this.timeout(60000);
+
+  if (process.env.APPVEYOR) {
+    console.log('Skipping WSK browser tests because we are running in ' +
+      'AppVeyor which doesn\'t support browsers');
+    return;
+  }
 
   // Driver is initialised to null to handle scenarios
   // where the desired browser isn't installed / fails to load
   // Null allows afterEach a safe way to skip quiting the driver
   let globalDriverReference = null;
+  let testServer;
 
-  beforeEach(function() {
-    this.timeout(60000);
-
-    const taskHelper = require('../src/wsk-tasks/task-helper');
-    const promises = taskHelper.getTasks().map(taskObject => {
-      var task = require(taskObject.path);
-      if (task.build) {
-        return new Promise(resolve => {
-          task.build().on('end', () => {
-            resolve();
-          });
-        });
-      }
-
-      return Promise.resolve();
+  before(function(done) {
+    // 0 for port will pick a random port number
+    testServerHelper.startServer(0, function(portNumber) {
+      testServer = `http://localhost:${portNumber}`;
+      done();
     });
-    return Promise.all(promises);
+  });
+
+  after(function() {
+    testServerHelper.killServer();
   });
 
   afterEach(function(done) {
@@ -99,16 +100,16 @@ describe('Test WSK', function() {
     // selenium-webdriver API seems to using some custom promise
     // implementation that has slight behaviour differences.
     return new Promise((resolve, reject) => {
-      driver.get('http://localhost:8888/test/browser-tests/')
+      driver.get(`${testServer}/test/browser-tests/`)
       .then(() => {
         return driver.executeScript('return window.navigator.userAgent;');
       })
       .then(userAgent => {
         // This is just to help with debugging so we can get the browser version
-        console.log('    Browser User Agent [' + browserName + ']: ' + userAgent);
+        console.log('        [' + browserName + ' UA]: ' + userAgent);
       })
       .then(() => {
-        // We get webdriver to wait until window.swtoolbox.testResults is defined.
+        // We get webdriver to wait until window.testsuite.testResults is defined.
         // This is set in the in browser mocha tests when the tests have finished
         // successfully
         return driver.wait(function() {
@@ -144,6 +145,7 @@ describe('Test WSK', function() {
       console.warn(`${browserName} path wasn\'t found so skipping`);
       return;
     }
+
     it(`should pass all tests in ${browserName}`, () => {
       globalDriverReference = new webdriver
         .Builder()
@@ -183,14 +185,42 @@ describe('Test WSK', function() {
     }
   }
 
+  function buildTestData() {
+    this.timeout(60000);
+
+    const taskHelper = require('../src/wsk-tasks/task-helper');
+    const promises = taskHelper.getTasks().map(taskObject => {
+      var task = require(taskObject.path);
+      if (task.build) {
+        return new Promise(resolve => {
+          const result = task.build();
+          if (result instanceof Promise) {
+            result.then(() => resolve());
+          } else {
+            result.on('end', () => {
+              resolve();
+            });
+          }
+        });
+      }
+
+      return Promise.resolve();
+    });
+    return Promise.all(promises);
+  }
+
   describe('Test Dev Environment', function() {
     GLOBAL.config.env = 'dev';
+
+    before(buildTestData);
 
     configureBrowserTests();
   });
 
   describe('Test Prod Environment', function() {
     GLOBAL.config.env = 'prod';
+
+    before(buildTestData);
 
     configureBrowserTests();
   });

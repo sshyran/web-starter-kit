@@ -73,13 +73,24 @@ let describeTestsForTask = function(taskName, task) {
           dest: TEST_OUTPUT_PATH
         };
 
-        task.build().on('end', () => {
-          // Check output exists
-          var outputFiles = fs.readdirSync('test/output');
-          outputFiles.should.have.length.above(0);
+        const buildResult = task.build();
+        if (buildResult instanceof Promise) {
+          buildResult.then(() => {
+            // Check output exists
+            var outputFiles = fs.readdirSync('test/output');
+            outputFiles.should.have.length.above(0);
 
-          done();
-        });
+            done();
+          });
+        } else {
+          buildResult.on('end', () => {
+            // Check output exists
+            var outputFiles = fs.readdirSync('test/output');
+            outputFiles.should.have.length.above(0);
+
+            done();
+          });
+        }
       });
     }
   });
