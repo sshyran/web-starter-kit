@@ -27,29 +27,23 @@ const webdriver = require('selenium-webdriver');
 const chromeOptions = require('selenium-webdriver/chrome');
 const firefoxOptions = require('selenium-webdriver/firefox');
 const which = require('which');
+const del = require('del');
 const testServerHelper = require('./server/server');
 
-const CHROME_PATH = which.sync('google-chrome');
-const CHROME_BETA_PATH = which.sync('google-chrome-beta');
-const FIREFOX_PATH = which.sync('firefox');
-const FIREFOX_BETA_PATH_FOR_TRAVIS = './firefox/firefox';
-
-const VALID_TEST_FILES = 'test/data/valid-files';
-const TEST_OUTPUT_PATH = 'test/output';
 
 // Before the tests start, we must build the current files
 GLOBAL.config = {
   env: 'prod',
-  src: VALID_TEST_FILES,
-  dest: TEST_OUTPUT_PATH
+  src: 'test/data/valid-files',
+  dest: 'test/output'
 };
 
 describe('Test WSK in browser', function() {
   this.timeout(60000);
 
+  // Skip if we are APPVEYOR since we have travis to automate these tests
   if (process.env.APPVEYOR) {
-    console.log('Skipping WSK browser tests because we are running in ' +
-      'AppVeyor which doesn\'t support browsers');
+    console.log('Skipping WSK browser tests on AppVeyor.');
     return;
   }
 
@@ -159,28 +153,30 @@ describe('Test WSK in browser', function() {
   };
 
   function configureBrowserTests() {
+    // Chrome Stable
+    const CHROME_PATH = which.sync('google-chrome');
     const chromeStableOpts = new chromeOptions.Options();
     chromeStableOpts.setChromeBinaryPath(CHROME_PATH);
-
     queueUnitTest('Chrome Stable', CHROME_PATH, 'chrome', chromeStableOpts);
 
-
+    // Chrome Beta
+    const CHROME_BETA_PATH = which.sync('google-chrome-beta');
     const chromeBetaOpts = new chromeOptions.Options();
     chromeBetaOpts.setChromeBinaryPath(CHROME_BETA_PATH);
-
     queueUnitTest('Chrome Beta', CHROME_BETA_PATH, 'chrome', chromeBetaOpts);
 
-
+    // Firefox Default Install
+    const FIREFOX_PATH = which.sync('firefox');
     const ffStableOpts = new firefoxOptions.Options();
     ffStableOpts.setBinary(FIREFOX_PATH);
-
     queueUnitTest('Firefox Stable', FIREFOX_PATH, 'firefox', ffStableOpts);
 
 
+    // Firefox Beta in specific path on Travis
     if (process.env.TRAVIS) {
+      const FIREFOX_BETA_PATH_FOR_TRAVIS = './firefox/firefox';
       const ffBetaOpts = new firefoxOptions.Options();
       ffBetaOpts.setBinary(FIREFOX_BETA_PATH_FOR_TRAVIS);
-
       queueUnitTest('Firefox Beta', FIREFOX_BETA_PATH_FOR_TRAVIS, 'firefox', ffStableOpts);
     }
   }
@@ -209,10 +205,15 @@ describe('Test WSK in browser', function() {
     return Promise.all(promises);
   }
 
+  function clearTestDataBuild(done) {
+    del(GLOBAL.config.dest + '/**').then(() => done(), done);
+  }
+
   describe('Test Dev Environment', function() {
     GLOBAL.config.env = 'dev';
 
     before(buildTestData);
+    after(clearTestDataBuild);
 
     configureBrowserTests();
   });
@@ -221,6 +222,7 @@ describe('Test WSK in browser', function() {
     GLOBAL.config.env = 'prod';
 
     before(buildTestData);
+    after(clearTestDataBuild);
 
     configureBrowserTests();
   });
