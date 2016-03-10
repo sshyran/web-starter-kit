@@ -154,30 +154,48 @@ describe('Test WSK in browser', function() {
 
   function configureBrowserTests() {
     // Chrome Stable
-    const CHROME_PATH = which.sync('google-chrome');
-    const chromeStableOpts = new chromeOptions.Options();
-    chromeStableOpts.setChromeBinaryPath(CHROME_PATH);
-    queueUnitTest('Chrome Stable', CHROME_PATH, 'chrome', chromeStableOpts);
+    try {
+      const CHROME_PATH = which.sync('google-chrome');
+      const chromeStableOpts = new chromeOptions.Options();
+      chromeStableOpts.setChromeBinaryPath(CHROME_PATH);
+      queueUnitTest('Chrome Stable', CHROME_PATH, 'chrome', chromeStableOpts);
+    } catch (err) {
+      console.error('Unable to find Chrome Stable.');
+    }
+
 
     // Chrome Beta
-    const CHROME_BETA_PATH = which.sync('google-chrome-beta');
-    const chromeBetaOpts = new chromeOptions.Options();
-    chromeBetaOpts.setChromeBinaryPath(CHROME_BETA_PATH);
-    queueUnitTest('Chrome Beta', CHROME_BETA_PATH, 'chrome', chromeBetaOpts);
+    try {
+      const CHROME_BETA_PATH = which.sync('google-chrome-beta');
+      const chromeBetaOpts = new chromeOptions.Options();
+      chromeBetaOpts.setChromeBinaryPath(CHROME_BETA_PATH);
+      queueUnitTest('Chrome Beta', CHROME_BETA_PATH, 'chrome', chromeBetaOpts);
+    } catch (err) {
+      console.error('Unable to find Chrome Beta.');
+    }
 
     // Firefox Default Install
-    const FIREFOX_PATH = which.sync('firefox');
-    const ffStableOpts = new firefoxOptions.Options();
-    ffStableOpts.setBinary(FIREFOX_PATH);
-    queueUnitTest('Firefox Stable', FIREFOX_PATH, 'firefox', ffStableOpts);
+    try {
+      const FIREFOX_PATH = which.sync('firefox');
+      const ffStableOpts = new firefoxOptions.Options();
+      ffStableOpts.setBinary(FIREFOX_PATH);
+      queueUnitTest('Firefox Stable', FIREFOX_PATH, 'firefox', ffStableOpts);
+    } catch (err) {
+      console.error('Unable to find default Firefox.');
+    }
 
 
     // Firefox Beta in specific path on Travis
     if (process.env.TRAVIS) {
-      const FIREFOX_BETA_PATH_FOR_TRAVIS = './firefox/firefox';
-      const ffBetaOpts = new firefoxOptions.Options();
-      ffBetaOpts.setBinary(FIREFOX_BETA_PATH_FOR_TRAVIS);
-      queueUnitTest('Firefox Beta', FIREFOX_BETA_PATH_FOR_TRAVIS, 'firefox', ffStableOpts);
+      try {
+        const FIREFOX_BETA_PATH_FOR_TRAVIS = './firefox/firefox';
+        const ffBetaOpts = new firefoxOptions.Options();
+        ffBetaOpts.setBinary(FIREFOX_BETA_PATH_FOR_TRAVIS);
+        queueUnitTest('Firefox Beta', FIREFOX_BETA_PATH_FOR_TRAVIS, 'firefox',
+          ffBetaOpts);
+      } catch (err) {
+        console.error('Unable to find Firefox beta.');
+      }
     }
   }
 
