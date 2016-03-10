@@ -5,6 +5,7 @@
     "browser-sync": "^2.11.1",
     "browserify": "^13.0.0",
     "chai": "^3.4.1",
+    "chromedriver": "^2.21.2",
     "david": "^7.0.0",
     "del": "^2.2.0",
     "eslint": "^2.0.0",
