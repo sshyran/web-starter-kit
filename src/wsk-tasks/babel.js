@@ -29,37 +29,33 @@ const path = require('path');
 const glob = require('glob');
 
 function bundleJS(fullFilePath) {
-  return new Promise((resolve, reject) => {
-    const browserifyBundles = browserify({
-      entries: fullFilePath
-    });
-
-    // Rollupify reduces the size of the final output but increases build
-    // time to do it so enable for production build only
-    if (GLOBAL.config.env === 'prod') {
-      browserifyBundles.transform('rollupify');
-    }
-
-    let stream = browserifyBundles
-    .transform('babelify', {presets: ['es2015']})
-    .bundle()
-    // `source` Converts Browserify's Node Stream to a Gulp Stream
-    // Use path.relative to make the file have the correct home in `dest`
-    .pipe(
-      source(path.join('.', path.relative(GLOBAL.config.src, fullFilePath)))
-    )
-    .pipe(buffer())
-    .pipe(sourcemaps.init());
-
-    if (GLOBAL.config.env === 'prod') {
-      stream = stream.pipe(uglify());
-    }
-
-    stream.pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest(GLOBAL.config.dest))
-    .on('error', reject)
-    .on('end', () => resolve());
+  const browserifyBundles = browserify({
+    entries: fullFilePath
   });
+
+  // Rollupify reduces the size of the final output but increases build
+  // time to do it so enable for production build only
+  if (GLOBAL.config.env === 'prod') {
+    browserifyBundles.transform('rollupify');
+  }
+
+  let stream = browserifyBundles
+  .transform('babelify', {presets: ['es2015']})
+  .bundle()
+  // `source` Converts Browserify's Node Stream to a Gulp Stream
+  // Use path.relative to make the file have the correct home in `dest`
+  .pipe(
+    source(path.join('.', path.relative(GLOBAL.config.src, fullFilePath)))
+  )
+  .pipe(buffer())
+  .pipe(sourcemaps.init());
+
+  if (GLOBAL.config.env === 'prod') {
+    stream = stream.pipe(uglify());
+  }
+
+  return stream.pipe(sourcemaps.write('.'))
+  .pipe(gulp.dest(GLOBAL.config.dest));
 }
 
 function build() {
@@ -68,7 +64,13 @@ function build() {
   });
 
   const buildPromise = globResponse.reduce((promise, filePath) => {
-    return promise.then(() => bundleJS(filePath));
+    return promise.then(() => {
+      return new Promise((resolve, reject) => {
+        bundleJS(filePath)
+        .on('error', reject)
+        .on('end', () => resolve());
+      });
+    });
   }, Promise.resolve());
 
   return buildPromise;

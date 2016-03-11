@@ -50,7 +50,7 @@ function startServer(portNumber, cb) {
     _server.close();
   }
 
-  // Start service on port 8888
+  // Start service and log port number
   _server = app.listen(portNumber, function() {
     console.log('Example app listening at http://localhost:%s',
       _server.address().port);

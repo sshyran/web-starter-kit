@@ -186,7 +186,7 @@ describe('Test WSK in browser', function() {
 
 
     // Firefox Beta in specific path on Travis
-    if (process.env.TRAVIS) {
+    if (process.env.TRAVIS || process.env.FF_BETA_PATH) {
       try {
         const FIREFOX_BETA_PATH_FOR_TRAVIS = './firefox/firefox';
         const ffBetaOpts = new firefoxOptions.Options();
